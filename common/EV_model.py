@@ -111,7 +111,7 @@ class EV_model:
          88.73, 90.19, 123.64, 189.10, 324.36,344.73, 386.91, 696.73, 1005.09] ####对应不用运行状态下的急速
         Mot_t_minlist = [0.0, -25.38, -73.83, -108.44, -124.59, -140.74,
          -149.25, -149.69, -150.11, -150.20, -150.24,-147.20, -145.95, -110.46, -74.06]
-        data_path = 'motor_eff1.mat'
+        data_path = './data/motor_eff1.mat'
         data = scio.loadmat(data_path)
         Mot_eta_map = data['bm'] / 100
         Mot_eta_map = np.array(Mot_eta_map)
@@ -207,7 +207,7 @@ if __name__ == '__main__':
     next_soc_new = 1
     T_mot_list = []
     W_mot_list = []
-    data_path_cycle = 'FTP75-2.mat'
+    data_path_cycle = './data/FTP75-2.mat'
     # data_path_cycle = 'Standard_NEDC.mat'
     data = scio.loadmat(data_path_cycle)
     speed_list = data['speed_vector'][0]
