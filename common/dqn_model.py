@@ -31,12 +31,12 @@ class Memory:
 
 
 class DQN_net(nn.Module):
-    def __init__(self, s_dim, a_dim):
+    def __init__(self, s_dim, a_num):
         super(DQN_net, self).__init__()
         self.fc1 = nn.Linear(s_dim, 64)
         self.fc2 = nn.Linear(64, 64)
         # self.fc3 = nn.Linear(128, 64)
-        self.fc4 = nn.Linear(64, a_dim)
+        self.fc4 = nn.Linear(64, a_num)
 
         for m in self.modules():
             if isinstance(m, torch.nn.Linear):
@@ -51,13 +51,13 @@ class DQN_net(nn.Module):
 
 
 class DQN_model:
-    def __init__(self, args, s_dim, a_dim, target_update_freq=300):
+    def __init__(self, args, s_dim, a_num, target_update_freq=300):
         self.args = args
         self.gamma = args.gamma
-        self.a_dim = a_dim
-        self.dqn = DQN_net(s_dim=s_dim, a_dim=a_dim)
+        self.a_num = a_num
+        self.dqn = DQN_net(s_dim=s_dim, a_num=a_num)
         self.dqn_optimizer = torch.optim.Adam(self.dqn.parameters())
-        self.dqn_target = DQN_net(s_dim=s_dim, a_dim=a_dim)
+        self.dqn_target = DQN_net(s_dim=s_dim, a_num=a_num)
         self.dqn_target.load_state_dict(self.dqn.state_dict())
         step_size_up = int(args.max_episodes / 10)
         self.scheduler_lr = torch.optim.lr_scheduler.CyclicLR(self.dqn_optimizer,
@@ -69,7 +69,6 @@ class DQN_model:
         self.num_updates = 0
         self.target_update_freq = target_update_freq
         self.batch_size = args.batch_size
-        self.action_num = args.action_num
 
     def train(self, minibatch):
         # obtain minibatch
@@ -87,13 +86,14 @@ class DQN_model:
         reward = Variable(torch.FloatTensor(reward)).type(dtype=torch.float32)
         state_next = Variable(torch.FloatTensor(state_next)).type(dtype=torch.float32)
 
-        Q_value = self.dqn.forward(state)  # 64,3
+        Q_value = self.dqn.forward(state)  # 64,34
         action = torch.unsqueeze(action, dim=1)  # 64,1
-        Q_value = Q_value.gather(0, action)  # Q(s, a)使Q_value不止与state有关，还与action有关
+        Q_value = Q_value.gather(1, action)  # Q(s, a)使Q_value不止与state有关，还与action有关,dim=?
+
         Q_next = self.dqn_target(state_next).detach()
         Q_next_max, idx = Q_next.max(1)  # greedy policy
         Q_target = reward + self.gamma * Q_next_max
-        Q_target = torch.reshape(Q_target, (self.batch_size, 1))
+        Q_target = torch.unsqueeze(Q_target, dim=1)  #
         loss_fn = nn.MSELoss(reduction='mean')
 
         loss = loss_fn(Q_value, Q_target)
@@ -113,15 +113,14 @@ class DQN_model:
         # s = Variable(torch.FloatTensor(s))      # 这两行都是要把nparray->tensor，
         Q_value = self.dqn.forward(s)
         if np.random.random() < epsilon:
-            a_id = np.random.randint(0, self.a_dim)
-            return a_id, epsilon
-
+            action = np.random.randint(0, self.a_num)
+            return action, epsilon
         else:
             return torch.argmax(Q_value), epsilon  # todo:3选一
 
     def random_action(self):
-        a_id = np.random.randint(0, self.a_dim)
-        return a_id
+        action = np.random.randint(0, self.a_num)
+        return action
 
     def save_model(self, save_path, save_episode):
         model_path = save_path + '/net_params'

@@ -4,7 +4,6 @@ import torch
 import numpy as np
 import time
 import scipy.io as scio
-from common.sac import SAC
 
 class Evaluator:
     def __init__(self, args, env):

@@ -17,7 +17,7 @@ class Runner:
         self.env = env
         # self.buffer = MemoryBuffer(args)
         self.memory = Memory(memory_size=args.buffer_size, batch_size=args.batch_size)
-        self.DQN_agent = DQN_model(args, s_dim=self.env.obs_num, a_dim=self.env.act_dim)
+        self.DQN_agent = DQN_model(args, s_dim=self.env.obs_num, a_num=self.env.act_num)
         # configuration
         self.episode_num = args.max_episodes
         self.episode_step = args.episode_steps
@@ -45,7 +45,6 @@ class Runner:
         # save_path = str(self.args.save_dir) + "_DQN_" + "_LR" + str(self.args.lr_DQN)
         # todo:args中修改保存路径/添加其他需要的信息，如起讫点
         average_reward = []  # average_reward of each episode
-        DONE = {}
         # c_loss = []
         loss = []
         travel_dis = []
@@ -69,22 +68,20 @@ class Runner:
             loss_one_ep = []
             info = {}
             # data being saved in .mat
-            episode_info = {'travel_dis': [], 'travel_time': [], 'travel_cost': [],  'SOC': [],
-                            'current_location': [], 'P_mot': [], 'V_batt': [], 'I_batt': [], 'SOC_delta': []
-                            }
+            episode_info = {'travel_dis': [], 'current_location': []}
             episode_step = 0
             while True:
                 with torch.no_grad():  # 节省计算量
-                    action_id, epsilon_using = self.DQN_agent.e_greedy_action(state, epsilon)
-                actions = self.env.act_list[action_id]
-                while actions == 0:
-                    action_id = self.DQN_agent.random_action()
-                    actions = self.env.act_list[action_id]
-
-                state_next, reward, done, info = self.env.step(episode_step, actions, self.args.w1,
-                                                               self.args.w2, self.args.w3, self.args.w4)
-                # 把存储的三维动作转化成一维的动作序号0-23
-                self.memory.store_transition(state, actions, reward, state_next)
+                    action, epsilon_using = self.DQN_agent.e_greedy_action(state, epsilon)
+                if action != 0:
+                    state_next, reward, done, info = self.env.step(episode_step, action, self.args.w1,
+                                                                   self.args.w2, self.args.w3, self.args.w4)
+                    self.memory.store_transition(state, action, reward, state_next)
+                else:
+                    state_next, reward, done, info = self.env.step(episode_step, action, self.args.w1,
+                                                                   self.args.w2, self.args.w3, self.args.w4)
+                    state_next = state  # 将没进入step的state赋给0矩阵state_next
+                    self.memory.store_transition(state, action, reward, state_next)
                 state = state_next
 
                 # save data
@@ -107,7 +104,7 @@ class Runner:
                     # 故调整代码顺序，将保存数据的代码放到done前面，将learn的代码放在done的后面
 
                 # learn
-                if self.memory.current_size >= 10 * self.args.batch_size:
+                if self.memory.current_size >= 15 * self.args.batch_size:
                     # noise_decrease = True
                     transition = self.memory.uniform_sample()
                     loss_step = self.DQN_agent.train(transition)
@@ -121,8 +118,8 @@ class Runner:
                 episode_step += 1
 
             if episode <= 100:
-                epsilon = 1
-            elif 101<= episode <= 200:
+                epsilon = 1.0
+            elif 101 <= episode <= 200:
                 epsilon -= float(epsilon_decent[decent_i])
                 decent_i += 1
                 epsilon = max(epsilon, finial_epsilon)
@@ -168,8 +165,3 @@ class Runner:
         print('buffer current size:', self.memory.current_size)
         print('replay ratio: %.3f' % (self.memory.counter / self.memory.current_size))
         print('arrive:', self.DONE)
-
-    def get_index(self, actions_id):
-        index = actions_id[2] + actions_id[1] * self.env.act2_dim + \
-                actions_id[0] * self.env.act2_dim * self.env.act1_dim
-        return index
