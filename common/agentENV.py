@@ -60,7 +60,8 @@ class RoutePlanning:
         return obs
 
     def execute(self, action):
-        if action != 0:
+        if self.get_action_effect(action) is True:
+        # if action != 0:
             self.next_location = action  # 按照训练好的Q网络找出当前状态对应的下一个动作
             # mappoint = self.map[self.current_location]  # current_location仅用于计算状态的更新
             self.travel_dis += dis_matrix[self.current_location][self.next_location]
@@ -98,7 +99,7 @@ class RoutePlanning:
         reward = -w1 * self.travel_dis
         # 第四部分：路径规划相关奖惩
         # ①防止选择不可行动作
-        if self.get_action_effect(action) == 0:
+        if self.get_action_effect(action) is True:
             reward -= 50
         else:
             # ②到达终点奖励
@@ -128,7 +129,7 @@ class RoutePlanning:
 
     def get_action_effect(self, action):
         action_effect = map_matrix[self.current_location][action]
-        return action_effect
+        return bool(action_effect)
 
     def current_location_vector(self, location):
         location_vector = np.zeros(self.act_num, dtype=int)

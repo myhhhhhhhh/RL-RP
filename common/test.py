@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
-import common.dqn_model
+import dqn_model
 
 a = torch.randint(0, 10, [4, 34], dtype=torch.float32)
 a = a.unsqueeze(0).unsqueeze(0)
