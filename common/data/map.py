@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.io as scio
 
 
 class MapPoint:
@@ -86,23 +87,26 @@ dis_table = {
 
 map_point_num = len(to_id_table)
 # 创建一个34*34的零矩阵
-map_matrix = np.zeros((34, 34))
-dis_matrix = np.zeros((34, 34))
+map_matrix = np.zeros((34, 34), dtype=np.int16)
+dis_matrix = np.zeros((34, 34), dtype=np.float16)
 
 # 填入连接关系得到0和1组成的Map matrix
 for point, connections in to_id_table.items():
     for connection in connections:
         # 因为矩阵的索引是从0开始的，所以需要减1
-        map_matrix[point - 1][connection - 1] = 1
+        map_matrix[point][connection] = 1 
 
     # 更新距离矩阵
     distances = dis_table[point]
     for i, connection in enumerate(connections):
         # 因为矩阵的索引是从0开始的，所以需要减1
-        dis_matrix[point - 1][connection - 1] = distances[i]
+        dis_matrix[point][connection] = distances[i]
 
 
 if __name__ == '__main__':
-    print(map_matrix)
-    print(dis_matrix)
+    print("map_matrix: ", map_matrix)
+    print("dis_matrix: ", dis_matrix)
     print(map_point_num)
+    print(map_matrix[18][26])
+    scio.savemat('./common/data/map_matrix.mat', mdict={'map_matrix': map_matrix})
+    scio.savemat('./common/data/dis_matrix.mat', mdict={'dis_matrix': dis_matrix})

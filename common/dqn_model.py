@@ -89,10 +89,10 @@ class DQN_model:
             action.append(tt[1])
             reward.append(tt[2])
             state_next.append(tt[3])
-        state = Variable(torch.FloatTensor(state)).type(dtype=torch.float32)
+        # state = Variable(torch.FloatTensor(state)).type(dtype=torch.float32)    # TODO obs is already a tensor
         action = Variable(torch.Tensor(action)).type(dtype=torch.int64)
         reward = Variable(torch.FloatTensor(reward)).type(dtype=torch.float32)
-        state_next = Variable(torch.FloatTensor(state_next)).type(dtype=torch.float32)
+        # state_next = Variable(torch.FloatTensor(state_next)).type(dtype=torch.float32)
 
         Q_value = self.dqn.forward(state)  # 64,34
         action = torch.unsqueeze(action, dim=1)  # 64,1
@@ -125,7 +125,9 @@ class DQN_model:
             action = np.random.randint(0, self.a_num)
             return action, epsilon
         else:
-            return torch.argmax(Q_value), epsilon  # todo:3选一
+            action = torch.argmax(Q_value)
+            action = action.item()
+            return action, epsilon  # todo:3选一
 
     def random_action(self):
         action = np.random.randint(0, self.a_num)
