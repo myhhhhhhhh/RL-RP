@@ -51,6 +51,9 @@ def get_args():
     parser.add_argument("--w2", type=float, default=690/5256)  # INC/T1 = 69000/(365*25*60),约0.13
     parser.add_argument("--w3", type=int, default=1)  # rmb
     parser.add_argument("--w4", type=float, default=0.5)
+    # start & end
+    parser.add_argument("--start_id", type=int, default=29)
+    parser.add_argument("--end_id", type=int, default=27)
     # all above
     args = parser.parse_args()
     return args

@@ -101,6 +101,7 @@ if __name__ == '__main__':
             dis_matrix[point][connection] = distances[i]
     # np.fill_diagonal(dis_matrix, 0)
     print(dis_matrix)
+    print(np.shape(dis_matrix)[0])
     start = 29
     goal = 27
     # 创建一个Astar对象

@@ -33,25 +33,33 @@ class Memory:
 class DQN_net(nn.Module):
     def __init__(self, s_dim, a_num):
         super(DQN_net, self).__init__()
-        self.fc1 = nn.Linear(s_dim, 64)
-        self.fc2 = nn.Linear(64, 64)
-        # self.fc3 = nn.Linear(128, 64)
-        self.fc4 = nn.Linear(64, a_num)
+        # self.fc1 = nn.Linear(s_dim, 64)
+        # self.fc2 = nn.Linear(64, 64)
+        # # self.fc3 = nn.Linear(128, 64)
+        # self.fc4 = nn.Linear(64, a_num)
+        # for m in self.modules():
+        #     if isinstance(m, torch.nn.Linear):
+        #         nn.init.kaiming_normal_(m.weight, mode='fan_in')
 
-        for m in self.modules():
-            if isinstance(m, torch.nn.Linear):
-                nn.init.kaiming_normal_(m.weight, mode='fan_in')
+        self.layers_cnn = nn.Sequential(
+            nn.Conv2d(1, 1, (2, 2)),
+            nn.ReLU(),
+            nn.MaxPool2d((2, 2)),
+            nn.Flatten(),
+            nn.Linear(16, a_num)
+        )
 
     def forward(self, x):
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        # x = F.relu(self.fc3(x))
-        x = F.relu(self.fc4(x))
+        # x = F.relu(self.fc1(x))
+        # x = F.relu(self.fc2(x))
+        # # x = F.relu(self.fc3(x))
+        # x = F.relu(self.fc4(x))
+        x = self.layers_cnn(x)
         return x
 
 
 class DQN_model:
-    def __init__(self, args, s_dim, a_num, target_update_freq=300):
+    def __init__(self, args, s_dim, a_dim, a_num, target_update_freq=300):
         self.args = args
         self.gamma = args.gamma
         self.a_num = a_num
@@ -109,10 +117,11 @@ class DQN_model:
         return loss_np
 
     def e_greedy_action(self, s, epsilon):
-        s = Variable(torch.from_numpy(s)).type(dtype=torch.float32)
-        # s = Variable(torch.FloatTensor(s))      # 这两行都是要把nparray->tensor，
+        # s = Variable(torch.from_numpy(s)).type(dtype=torch.float32)
+        # s = Variable(torch.FloatTensor(s))      # 这两行都是要把nparray->tensor
         Q_value = self.dqn.forward(s)
         if np.random.random() < epsilon:
+            # print('随机')
             action = np.random.randint(0, self.a_num)
             return action, epsilon
         else:

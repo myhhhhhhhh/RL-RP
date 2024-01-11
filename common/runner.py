@@ -17,7 +17,7 @@ class Runner:
         self.env = env
         # self.buffer = MemoryBuffer(args)
         self.memory = Memory(memory_size=args.buffer_size, batch_size=args.batch_size)
-        self.DQN_agent = DQN_model(args, s_dim=self.env.obs_num, a_num=self.env.act_num)
+        self.DQN_agent = DQN_model(args, s_dim=self.env.obs_dim, a_dim=self.env.act_dimension, a_num=self.env.act_num)
         # configuration
         self.episode_num = args.max_episodes
         self.episode_step = args.episode_steps
@@ -57,7 +57,7 @@ class Runner:
         # epsilon_decent = (initial_epsilon - finial_epsilon) / 200
         epsilon_decent = []
         decent_i = int(0)
-        for i in range(100):
+        for i in range(int(round(self.args.max_episodes / 3, 0))):
             epsilon_decent.append((1 - (0.01 * i) ** 2) - (1 - (0.01 * (i + 1)) ** 2))
         epsilon = initial_epsilon
         for episode in tqdm(range(self.episode_num)):
@@ -73,7 +73,8 @@ class Runner:
             while True:
                 with torch.no_grad():  # 节省计算量
                     action, epsilon_using = self.DQN_agent.e_greedy_action(state, epsilon)
-                if action != 0:
+                    print(action)
+                if self.env.EnvPlayer.get_action_effect(action) != 0:
                     state_next, reward, done, info = self.env.step(episode_step, action, self.args.w1,
                                                                    self.args.w2, self.args.w3, self.args.w4)
                     self.memory.store_transition(state, action, reward, state_next)
@@ -104,7 +105,7 @@ class Runner:
                     # 故调整代码顺序，将保存数据的代码放到done前面，将learn的代码放在done的后面
 
                 # learn
-                if self.memory.current_size >= 15 * self.args.batch_size:
+                if self.memory.current_size >= 150 * self.args.batch_size:
                     # noise_decrease = True
                     transition = self.memory.uniform_sample()
                     loss_step = self.DQN_agent.train(transition)
@@ -117,9 +118,9 @@ class Runner:
 
                 episode_step += 1
 
-            if episode <= 100:
+            if episode <= self.args.max_episodes / 3:
                 epsilon = 1.0
-            elif 101 <= episode <= 200:
+            elif self.args.max_episodes / 3 < episode <= self.args.max_episodes / 3 * 2:
                 epsilon -= float(epsilon_decent[decent_i])
                 decent_i += 1
                 epsilon = max(epsilon, finial_epsilon)
@@ -132,18 +133,19 @@ class Runner:
             # 但是173行的语句只能保存一维[]，故无法保存数据
             # 可做如下修改，视具体情况而定
             travel_dis.append(episode_info['travel_dis'][-1])
-            travel_time.append(episode_info['travel_time'][-1])
-            travel_cost.append(episode_info['travel_cost'][-1])
+            # travel_time.append(episode_info['travel_time'][-1])
+            # travel_cost.append(episode_info['travel_cost'][-1])
             # lr scheduler
             lr0 = self.DQN_agent.scheduler_lr.get_lr()[0]
             lr_recorder['lrcr'].append(lr0)
             self.DQN_agent.scheduler_lr.step()
-            # print
-            soc = info['SOC']
-            t_d = info['travel_dis']
 
-            print('\nepi %d: SOC-end: %.4f, travel_dis: %.4f'
-                  % (episode, soc, t_d))
+            # print
+            # soc = info['SOC']
+            t_d = info['travel_dis']
+            print('\nepi %d: travel_dis: %.4f'
+                  % (episode, t_d))
+
             # save loss and reward on the average
             ep_r = np.mean(episode_reward)
             ep_c1 = np.mean(loss_one_ep)
@@ -156,8 +158,8 @@ class Runner:
         scio.savemat(self.save_path + '/critic_loss.mat', mdict={'loss': loss})
         scio.savemat(self.save_path + '/lr_recorder.mat', mdict=lr_recorder)
         scio.savemat(self.save_path + '/travel_dis.mat', mdict={'travel_dis': travel_dis})
-        scio.savemat(self.save_path + '/travel_time.mat', mdict={'travel_time': travel_time})
-        scio.savemat(self.save_path + '/travel_cost.mat', mdict={'travel_cost': travel_cost})
+        # scio.savemat(self.save_path + '/travel_time.mat', mdict={'travel_time': travel_time})
+        # scio.savemat(self.save_path + '/travel_cost.mat', mdict={'travel_cost': travel_cost})
         scio.savemat(self.save_path + '/epsilon.mat', mdict={'epsilon': epsilon_using})
 
     def memory_info(self):

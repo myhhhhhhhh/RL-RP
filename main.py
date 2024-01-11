@@ -31,7 +31,7 @@ if __name__ == '__main__':
     # print('abs_acc_MAX: %.3f m/s2' % args.abs_acc_MAX)
     print("DRL method: ", args.DRL)
     print('obs_dim: ', args.obs_dim)
-    print('action_dim: ', args.action_dim)
+    print('action_dim: ', args.act_num)
     # print('initial SOC: ', args.soc0)
     # print('SOC-MODE: ', args.MODE)
 
