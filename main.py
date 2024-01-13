@@ -21,7 +21,7 @@ if __name__ == '__main__':
         print('max_episodes: ', args.evaluate_episode)
     else:
         args.scenario_name = args.scenario_name + "_w%d" % args.w_soc + '_' \
-                             + args.file_v + "_LR" + str(args.lr_DQN)
+                             + args.file_v + "_LR" + str('{:.0e}'.format(args.lr_DQN))
         sys.stdout = Logger(filepath=args.save_dir + "/" + args.scenario_name + "/", filename='train_log.log')
         # print('\n weight coefficient: w_soc = %.1f' % args.w_soc)
         print('max_episodes: ', args.max_episodes)

@@ -4,7 +4,7 @@ import argparse
 def get_args():
     parser = argparse.ArgumentParser("Soft Actor Critic Implementation")
     # Environment
-    parser.add_argument("--max_episodes", type=int, default=30, help="number of episodes ")
+    parser.add_argument("--max_episodes", type=int, default=300, help="number of episodes ")
     parser.add_argument("--episode_steps", type=int, default=None, help="number of time steps in a sngle episode")
     # Core training parameters
     parser.add_argument("--lr_critic", type=float, default=0.0001, help="learning rate of critic")
@@ -16,7 +16,7 @@ def get_args():
                         help="initial noise rate for sampling from a standard normal distribution ")
     parser.add_argument("--noise_discount_rate", type=float, default=0.999)
     # memory buffer
-    parser.add_argument("--buffer_size", type=int, default=int(5e3),    # DDPG: 1e4 for 200 ep,  3e4 for 500 ep
+    parser.add_argument("--buffer_size", type=int, default=int(15000),    # DDPG: 1e4 for 200 ep,  3e4 for 500 ep
                         help="number of transitions can be stored in buffer")
     parser.add_argument("--batch_size", type=int, default=64, help="number of episodes to optimize at the same time")
     # random seeds

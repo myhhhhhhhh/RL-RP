@@ -56,7 +56,7 @@ class RoutePlanning:
         obs_2 = obs_2[np.newaxis, :]
         obs_3 = obs_3[np.newaxis, :]
         obs = np.concatenate((obs_0, obs_1, obs_2, obs_3), axis=0)
-        obs = torch.tensor(obs, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
+        # obs = torch.tensor(obs, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
         return obs
 
     def execute(self, action):
@@ -64,7 +64,7 @@ class RoutePlanning:
         # if action != 0:
             self.next_location = action  # 按照训练好的Q网络找出当前状态对应的下一个动作
             # mappoint = self.map[self.current_location]  # current_location仅用于计算状态的更新
-            self.travel_dis += dis_matrix[self.current_location][self.next_location]
+            self.travel_dis += dis_matrix[self.current_location][self.next_location] / 1000  # km
 
             self.info.update({'travel_dis': self.travel_dis,
                               'current_location': self.next_location})
@@ -84,27 +84,29 @@ class RoutePlanning:
             obs_2 = obs_2[np.newaxis, :]
             obs_3 = obs_3[np.newaxis, :]
             obs = np.concatenate((obs_0, obs_1, obs_2, obs_3), axis=0)
-            obs = torch.tensor(obs, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
+            # obs = torch.tensor(obs, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
             self.current_location = self.next_location
         else:
             obs = np.zeros(self.obs_dim, dtype=np.float32)
-            obs = torch.tensor(obs, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
+            # obs = torch.tensor(obs, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
             self.info.update({'travel_dis': self.travel_dis,
                               'current_location': self.current_location})
         return obs
 
     def get_reward(self, action, w1, w2, w3, w4):
         # w1 w2 w3 w4为权重系数，作用是归一化，均为正常数
+        reward = 0.0
         # 第一部分：基础行驶产生的代价
-        reward = -w1 * self.travel_dis
+        # reward = -  0.1 * self.travel_dis
         # 第四部分：路径规划相关奖惩
         # ①防止选择不可行动作
         if self.get_action_effect(action) is True:
-            reward -= 50
+            reward -= 1
         else:
             # ②到达终点奖励
             if self.done is True:
                 reward += 50
+                reward += 10 * (1 / self.travel_dis)
             # ③步数尽量少
             else:
                 reward -= 0.1

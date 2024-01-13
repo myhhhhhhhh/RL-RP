@@ -42,13 +42,28 @@ c = np.zeros(b, dtype=np.float32)
 print(c)
 
 if __name__ == '__main__':
-    arr = np.zeros((4, 34), dtype=np.float32)
-    obs = torch.tensor(arr)
-    print(obs.dtype)
+    # arr = np.zeros((4, 34), dtype=np.float32)
+    # obs = torch.tensor(arr)
+    # print(obs.dtype)
+    #
+    # a = np.zeros(3, dtype=np.float32)
+    # b = np.zeros(3, dtype=np.float32)
+    # a = a[np.newaxis, :]
+    # b = b[np.newaxis, :]
+    # print(a.shape)
+    # print(np.concatenate((a, b), axis=0))
 
-    a = np.zeros(3, dtype=np.float32)
-    b = np.zeros(3, dtype=np.float32)
-    a = a[np.newaxis, :]
-    b = b[np.newaxis, :]
+    x = torch.randn(3, 2, 5, 4)
+    print(x)
+    print(x[0].shape)
+
+    conv = torch.nn.Conv2d(2, 6, (2, 3))
+    res = conv(x)
+
+    print(res.shape)  # torch.Size([3, 4, 4, 2])
+
+    a = np.zeros((2, 3))
     print(a.shape)
-    print(np.concatenate((a, b), axis=0))
+    aa = a[np.newaxis, :]
+    print(aa.shape)
+

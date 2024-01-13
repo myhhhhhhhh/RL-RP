@@ -30,7 +30,7 @@ class Runner:
         # tensorboard
         fileinfo = args.scenario_name
         self.writer = SummaryWriter(args.log_dir + '/{}_{}_{}_seed{}'
-                                    .format(datetime.datetime.now().strftime("%m-%d_%H-%M"),
+                                    .format(datetime.datetime.now().strftime("%m_%d_%H_%M"),
                                             fileinfo, self.args.DRL, self.args.seed))
         self.DONE = {}
 
@@ -111,11 +111,12 @@ class Runner:
                     transition = self.memory.uniform_sample()
                     loss_step = self.DQN_agent.train(transition)
                     # save to tensor board
-                    self.writer.add_scalar('loss/critic', loss_step, updates)
+                    self.writer.add_scalar('loss/Q_loss', loss_step, updates)
                     self.writer.add_scalar('reward/step_reward', reward, updates)
                     updates += 1
                     # save in .mat
                     loss_one_ep.append(loss_step)
+                    # print('loss step: ', loss_step)
 
                 episode_step += 1
 
@@ -155,8 +156,8 @@ class Runner:
             average_reward.append(ep_r)
             loss.append(ep_c1)
 
-        scio.savemat(self.save_path + '/reward.mat', mdict={'reward': average_reward})
-        scio.savemat(self.save_path + '/critic_loss.mat', mdict={'loss': loss})
+        scio.savemat(self.save_path + '/ep_reward.mat', mdict={'ep_reward': average_reward})
+        scio.savemat(self.save_path + '/Q_loss.mat', mdict={'Q_loss': loss})
         scio.savemat(self.save_path + '/lr_recorder.mat', mdict=lr_recorder)
         scio.savemat(self.save_path + '/travel_dis.mat', mdict={'travel_dis': travel_dis})
         # scio.savemat(self.save_path + '/travel_time.mat', mdict={'travel_time': travel_time})

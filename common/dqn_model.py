@@ -46,7 +46,10 @@ class DQN_net(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d((2, 2)),
             nn.Flatten(),
-            nn.Linear(16, a_num)
+            # nn.Linear(16, a_num),
+            # nn.ReLU()
+            nn.Linear(16, a_num),
+            nn.ReLU()       # TODO activation function
         )
 
     def forward(self, x):
@@ -85,15 +88,19 @@ class DQN_model:
         reward = []
         state_next = []
         for tt in minibatch:
-            state.append(tt[0])
+            state.append(tt[0][np.newaxis, :])
             action.append(tt[1])
             reward.append(tt[2])
-            state_next.append(tt[3])
-        # state = Variable(torch.FloatTensor(state)).type(dtype=torch.float32)    # TODO obs is already a tensor
-        action = Variable(torch.Tensor(action)).type(dtype=torch.int64)
-        reward = Variable(torch.FloatTensor(reward)).type(dtype=torch.float32)
+            state_next.append(tt[3][np.newaxis, :])
+        state = torch.tensor(np.array(state), dtype=torch.float32)
+        action = torch.tensor(action, dtype=torch.int64)
+        reward = torch.tensor(reward, dtype=torch.float32)
+        state_next = torch.tensor(np.array(state_next), dtype=torch.float32)
+        # state = Variable(torch.FloatTensor(state)).type(dtype=torch.float32)
+        # action = Variable(torch.Tensor(action)).type(dtype=torch.int64)
+        # reward = Variable(torch.FloatTensor(reward)).type(dtype=torch.float32)
         # state_next = Variable(torch.FloatTensor(state_next)).type(dtype=torch.float32)
-
+        print('训练了')
         Q_value = self.dqn.forward(state)  # 64,34
         action = torch.unsqueeze(action, dim=1)  # 64,1
         Q_value = Q_value.gather(1, action)  # Q(s, a)使Q_value不止与state有关，还与action有关,dim=?
@@ -119,6 +126,8 @@ class DQN_model:
     def e_greedy_action(self, s, epsilon):
         # s = Variable(torch.from_numpy(s)).type(dtype=torch.float32)
         # s = Variable(torch.FloatTensor(s))      # 这两行都是要把nparray->tensor
+        s = torch.tensor(s, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
+        # s = torch.tensor(s, dtype=torch.float32)
         Q_value = self.dqn.forward(s)
         if np.random.random() < epsilon:
             # print('随机')
