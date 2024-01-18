@@ -44,7 +44,7 @@ if __name__ == '__main__':
     else:
         print("\n-----Start training-----")
         runner = Runner(args, env)
-        runner.set_seed()
+        runner.set_seed() 
         if args.DRL == 'DQN':
             runner.run_DQN()
         # elif args.DRL == 'DDPG':
