@@ -67,7 +67,7 @@ class Astar:
         # print(shortest_path[::-1])  # 逆序
         # print('最佳路径的代价为：{}'.format(self.min_dis))
         # print('找到最短路径， 结束！')
-        print('.')
+        # print('.')
         shortest_path.reverse()
         path = []
         for n in shortest_path:

@@ -16,8 +16,12 @@ class Memory:
         self.current_size = 0
         self.memory_buffer = deque(maxlen=memory_size)
 
-    def store_transition(self, s, a, r, s_):
-        transition = (s, a, r, s_)
+    # 在store函数中将s|g,s`|g拼接，这样runner中可以节省一次拼接步骤，实际存储的还是(s,a,r,s`)形式。后续训练时也直接取出输入网络即可，不用再拼
+    def store_transition(self, s, a, r, s_, done, goal):
+        # transition = (s, a, r, s_, done, goal)
+        state_goal = np.concatenate((s, goal), axis=0)
+        statenext_goal = np.concatenate((s_, goal), axis=0)
+        transition = (state_goal, a, r, statenext_goal)
         self.memory_buffer.append(transition)
         self.counter += 1
         self.current_size = min(self.counter, self.memory_size)
@@ -45,10 +49,17 @@ class DQN_net(nn.Module):
             nn.Conv2d(1, 1, (2, 2)),
             nn.ReLU(),
             nn.MaxPool2d((2, 2)),
-            nn.Flatten(),
+            nn.Flatten()
+        )
+        with torch.no_grad():
+            x = torch.randn((1, 1, int(s_dim[0] * 1.5), s_dim[1]))
+            y = self.layers_cnn(x)
+            print(y.shape)
+            in_features = y.shape[1]
+        self.layers_linear = nn.Sequential(
             # nn.Linear(16, a_num),
             # nn.ReLU()
-            nn.Linear(16, a_num),
+            nn.Linear(in_features, a_num),
             nn.ReLU()       # TODO activation function
         )
 
@@ -58,6 +69,7 @@ class DQN_net(nn.Module):
         # # x = F.relu(self.fc3(x))
         # x = F.relu(self.fc4(x))
         x = self.layers_cnn(x)
+        x = self.layers_linear(x)
         return x
 
 
@@ -86,7 +98,7 @@ class DQN_model:
         state = []
         action = []
         reward = []
-        state_next = []
+        state_next = []        
         for tt in minibatch:
             state.append(tt[0][np.newaxis, :])
             action.append(tt[1])
@@ -100,6 +112,7 @@ class DQN_model:
         # action = Variable(torch.Tensor(action)).type(dtype=torch.int64)
         # reward = Variable(torch.FloatTensor(reward)).type(dtype=torch.float32)
         # state_next = Variable(torch.FloatTensor(state_next)).type(dtype=torch.float32)
+        
         print('训练了')
         Q_value = self.dqn.forward(state)  # 64,34
         action = torch.unsqueeze(action, dim=1)  # 64,1
@@ -123,12 +136,16 @@ class DQN_model:
             print("total training steps: %d, update target network!" % self.num_updates)
         return loss_np
 
-    def e_greedy_action(self, s, epsilon):
-        # s = Variable(torch.from_numpy(s)).type(dtype=torch.float32)
-        # s = Variable(torch.FloatTensor(s))      # 这两行都是要把nparray->tensor
-        s = torch.tensor(s, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
-        # s = torch.tensor(s, dtype=torch.float32)
-        Q_value = self.dqn.forward(s)
+    def e_greedy_action(self, s, g, epsilon):        
+        # s = torch.tensor(s, dtype=torch.float32).unsqueeze(0).unsqueeze(0)  # change np.array to Tensor
+        
+        # s = torch.tensor(s, dtype=torch.float32)  # invalid
+        # g = torch.tensor(g, dtype=torch.float32)
+        # state_goal = torch.cat((s, g), dim=1)
+        
+        state_goal = np.concatenate((s, g), axis=0)
+        state_goal = torch.tensor(state_goal, dtype=torch.float32).unsqueeze(0)
+        Q_value = self.dqn.forward(state_goal)
         if np.random.random() < epsilon:
             # print('随机')
             action = np.random.randint(0, self.a_num)
@@ -136,7 +153,7 @@ class DQN_model:
         else:
             action = torch.argmax(Q_value)
             action = action.item()
-            return action, epsilon  # todo:3选一
+            return action, epsilon
 
     def random_action(self):
         action = np.random.randint(0, self.a_num)

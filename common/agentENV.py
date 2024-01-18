@@ -38,8 +38,8 @@ class RoutePlanning:
         self.done = False
         self.current_location = self.args.start_id
         self.next_location = self.args.start_id
-        # self.travel_time = 0.0  # 汽车行驶产生的状态变化
-        self.path = []
+        self.travel_dis = 0.0  # 汽车行驶产生的状态变化
+        self.path = [self.start_id]
 
         # obs = np.zeros(self.obs_dim, dtype=np.float32)  # np.array
         # obs[0] = self.current_location
@@ -57,24 +57,23 @@ class RoutePlanning:
         obs_3 = obs_3[np.newaxis, :]
         obs = np.concatenate((obs_0, obs_1, obs_2, obs_3), axis=0)
         # obs = torch.tensor(obs, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
-        return obs
+        
+        init_goal = np.random.randint(0,33)  # 设置一个goal的初始状态用于选择动作，后续更新方式更加重要，因此设置为随机        
+        goal = self.generate_goal_array(init_goal)
+        return obs, goal
 
     def execute(self, action):
         if self.get_action_effect(action) is True:
         # if action != 0:
             self.next_location = action  # 按照训练好的Q网络找出当前状态对应的下一个动作
+            if self.next_location not in self.path:
+                self.path.append(self.next_location)
             # mappoint = self.map[self.current_location]  # current_location仅用于计算状态的更新
             self.travel_dis += dis_matrix[self.current_location][self.next_location] / 1000  # km
 
             self.info.update({'travel_dis': self.travel_dis,
                               'current_location': self.next_location})
-
-            # obs = np.zeros(self.obs_dim, dtype=np.float32)  # np.array
-            # obs[0] = self.current_location
-            # # obs[1] = map_matrix[self.next_location]
-            # # obs[2] = dis_matrix[self.next_location]
-            # obs[1] = self.travel_dis / self.travel_dis_max
-            # obs[2] = self.left_dis / self.travel_dis_max
+            
             obs_0 = self.current_location_vector(self.current_location)
             obs_1 = dis_matrix[self.current_location]
             obs_2 = self.current_location_vector(self.next_location)
@@ -89,8 +88,10 @@ class RoutePlanning:
         else:
             obs = np.zeros(self.obs_dim, dtype=np.float32)
             # obs = torch.tensor(obs, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
+            # 不对path进行更新
             self.info.update({'travel_dis': self.travel_dis,
                               'current_location': self.current_location})
+            # step的过程中与goal无关，也无需返回，goal仅参与选择动作、计算r、存储环节
         return obs
 
     def get_reward(self, action, w1, w2, w3, w4):
@@ -110,17 +111,49 @@ class RoutePlanning:
             # ③步数尽量少
             else:
                 reward -= 0.1
+        
         # ④防止走回头路
         if self.current_location in self.path:
-            reward -= 0.1
-        else:
-            self.path.append(self.current_location)
+            reward -= 0.1        
+        
         # ⑤通过A*,离终点越近给越大的奖励
         dis_left = self.calculate_travel_dis(self.current_location, self.end_id) / self.calculate_travel_dis(
             self.start_id, self.end_id)
         reward += 15 * (1 - dis_left)
         return float(reward)
-
+    
+    def get_reward_prime(self, action, goal, w1, w2, w3, w4):        
+        reward = 0.0
+        goal_location = self.generate_goal_location(goal)
+        
+        if self.get_action_effect(action) is True:
+            reward -= 1
+        else:
+            # ②到达终点奖励
+            if action == goal_location:
+                reward += 50
+                if self.travel_dis != 0:
+                    reward += 10 * (1 / self.travel_dis)
+                else:
+                    reward += 10 * (1 / (self.travel_dis + 1))
+            # ③减少步数
+            else:
+                reward -= 0.1
+        
+        # ④防止走回头路
+        if self.current_location in self.path:
+            reward -= 0.1        
+        
+        # ⑤通过A*,离终点越近给越大的奖励
+        if self.current_location != goal_location:
+            dis_left = self.calculate_travel_dis(self.current_location, goal_location) / self.calculate_travel_dis(
+                self.start_id, goal_location)
+        else:
+            dis_left = self.calculate_travel_dis(self.current_location, goal_location) / (self.calculate_travel_dis(
+                self.start_id, goal_location) + 1)
+        reward += 15 * (1 - dis_left)
+        return float(reward)
+    
     def get_info(self):
         return self.info
 
@@ -128,16 +161,35 @@ class RoutePlanning:
         if self.current_location == self.end_id:
             self.done = True
         return self.done
+    
+    def get_path(self):
+        return self.path
 
+    # 由输入的action编号索引得到该动作对应的是1（可行）还是0（不可行）
     def get_action_effect(self, action):
         action_effect = map_matrix[self.current_location][action]
         return bool(action_effect)
 
+    # 由位置数字0-map_point_num输出表示位置的数组[0,0,...1, 0,...,0]
     def current_location_vector(self, location):
         location_vector = np.zeros(self.act_num, dtype=int)
         location_vector[location] = 1
         return location_vector
-
+    
+    # 由2*map_point_num的goal数组提取出代表的位置编号
+    def generate_goal_location(self, goal):
+        index = np.argwhere(goal[0] == 1)
+        return (index[0].tolist())[0]
+    
+    # 由位置编号产生一个2*map_point_num的goal数组
+    def generate_goal_array(self, goal_location):
+        goal_0 = self.current_location_vector(goal_location)
+        goal_1 = dis_matrix[goal_location]
+        goal_0 = goal_0[np.newaxis, :]
+        goal_1 = goal_1[np.newaxis, :]
+        goal = np.concatenate((goal_0, goal_1), axis=0)
+        return goal
+    
     @staticmethod
     def calculate_travel_dis(start_id, end_id):
         if start_id != end_id:

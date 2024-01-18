@@ -1,11 +1,16 @@
 import datetime
 import os
+import sys
 import numpy as np
 from numpy.random import normal  # normal distribution
+import random
 import scipy.io as scio
 import torch
 from torch.utils.tensorboard import SummaryWriter
+from torchsummary import summary
 from tqdm import tqdm
+# sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
+# print(sys.path)
 from common.memory import MemoryBuffer
 from common.dqn_model import DQN_model, Memory
 from common.agentENV import RoutePlanning
@@ -17,7 +22,9 @@ class Runner:
         self.env = env
         # self.buffer = MemoryBuffer(args)
         self.memory = Memory(memory_size=args.buffer_size, batch_size=args.batch_size)
-        self.DQN_agent = DQN_model(args, s_dim=self.env.obs_dim, a_dim=self.env.act_dimension, a_num=self.env.act_num)
+        self.DQN_agent = DQN_model(args, s_dim=self.env.obs_dim, a_dim=self.env.act_dimension, a_num=self.env.act_num)     
+        print(self.DQN_agent.dqn)
+        summary(model=self.DQN_agent.dqn, input_size=(1, 6, 34), device="cpu") 
         # configuration
         self.episode_num = args.max_episodes
         self.episode_step = args.episode_steps
@@ -42,14 +49,13 @@ class Runner:
         print("\n Random seeds have been set to %d !\n" % seed)
 
     def run_DQN(self):
-        # save_path = str(self.args.save_dir) + "_DQN_" + "_LR" + str(self.args.lr_DQN)
-        # todo:args中修改保存路径/添加其他需要的信息，如起讫点
+        # save_path = str(self.args.save_dir) + "_DQN_" + "_LR" + str(self.args.lr_DQN)        
         average_reward = []  # average_reward of each episode
         # c_loss = []
         loss = []
         travel_dis = []
-        travel_time = []
-        travel_cost = []
+        # travel_time = []
+        # travel_cost = []
         lr_recorder = {'lrcr': []}  # 动态变化的学习率
         epsilon_list = []
         updates = 0  # for tensorboard counter, 记录总共多少个time-step
@@ -58,11 +64,13 @@ class Runner:
         # epsilon_decent = (initial_epsilon - finial_epsilon) / 200
         epsilon_decent = []
         decent_i = int(0)
+        
         for i in range(int(round(self.args.max_episodes / 3, 0))):
             epsilon_decent.append((1 - (0.01 * i) ** 2) - (1 - (0.01 * (i + 1)) ** 2))
         epsilon = initial_epsilon
+        
         for episode in tqdm(range(self.episode_num)):
-            state = self.env.reset()  # reset the environment
+            state, goal = self.env.reset()  # reset the environment
             # if noise_decrease:
             #     noise_rate *= self.args.noise_discount_rate
             episode_reward = []
@@ -73,18 +81,29 @@ class Runner:
             episode_step = 0
             while True:
                 with torch.no_grad():  # 节省计算量
-                    action, epsilon_using = self.DQN_agent.e_greedy_action(state, epsilon)
+                    action, epsilon_using = self.DQN_agent.e_greedy_action(state, goal, epsilon)
                     print("action: ", action)
                 if self.env.EnvPlayer.get_action_effect(action) is True:
-                    state_next, reward, done, info = self.env.step(episode_step, action, self.args.w1,
+                    state_next, reward, _, done, info, path = self.env.step(episode_step, action, goal, self.args.w1,
                                                                    self.args.w2, self.args.w3, self.args.w4)
-                    self.memory.store_transition(state, action, reward, state_next)
+                    self.memory.store_transition(state, action, reward, state_next, done, goal)
                 else:
-                    state_next, reward, done, info = self.env.step(episode_step, action, self.args.w1,
+                    state_next, reward, _, done, info, path = self.env.step(episode_step, action, goal, self.args.w1,
                                                                    self.args.w2, self.args.w3, self.args.w4)
                     state_next = state  # 将没进入step的state赋给0矩阵state_next
-                    self.memory.store_transition(state, action, reward, state_next)
+                    self.memory.store_transition(state, action, reward, state_next, done, goal)
                 state = state_next
+                
+                k = int(20)
+                goal_prime = self.get_goal_full(k)  # k个元素的列表，元素为2*34的np数组
+                # goal_prime = self.get_goal_past(k, path)
+                # goal_prime = self.get_goal_future(k, path)
+                for i in goal_prime:
+                    reward_prime = self.env.EnvPlayer.get_reward_prime(action, goal_prime, self.args.w1, self.args.w2, 
+                                                                       self.args.w3, self.args.w4)
+                    self.memory.store_transition(state, action, reward_prime, state_next, done, i)
+                    # print('--------------HER is operated-------------------')
+
 
                 # save data
                 for key in episode_info.keys():
@@ -106,7 +125,7 @@ class Runner:
                     # 故调整代码顺序，将保存数据的代码放到done前面，将learn的代码放在done的后面
 
                 # learn
-                if self.memory.current_size >= 150 * self.args.batch_size:
+                if self.memory.current_size >= 200 * self.args.batch_size:
                     # noise_decrease = True
                     transition = self.memory.uniform_sample()
                     loss_step = self.DQN_agent.train(transition)
@@ -129,6 +148,7 @@ class Runner:
             else:
                 epsilon = 0.2
             epsilon_list.append(epsilon)
+            
             # show episode data
             # 查看74行，可知episode_info['travel_cost']是一个[]，保存了一个episode的运行情况
             # 若charge_cost.append(episode_info['charge_cost'])，则charge_cost将是一个二维[[]]
@@ -137,6 +157,7 @@ class Runner:
             travel_dis.append(episode_info['travel_dis'][-1])
             # travel_time.append(episode_info['travel_time'][-1])
             # travel_cost.append(episode_info['travel_cost'][-1])
+            
             # lr scheduler
             lr0 = self.DQN_agent.scheduler_lr.get_lr()[0]
             lr_recorder['lrcr'].append(lr0)
@@ -169,3 +190,35 @@ class Runner:
         print('buffer current size:', self.memory.current_size)
         print('replay ratio: %.3f' % (self.memory.counter / self.memory.current_size))
         print('arrive:', self.DONE)
+        
+    def get_goal_full(self, k):
+        map_point = []
+        goal_prime = []
+        for i in range(34):
+            map_point.append(i)
+        goal_prime_location = random.sample(map_point, k)
+        for i in goal_prime_location:
+            goal_i = self.env.EnvPlayer.generate_goal_array(i)
+            goal_prime.append(goal_i)
+        return goal_prime
+        
+    def get_goal_past(self, k, path):
+        goal_prime = []        
+        goal_prime_location = random.sample(path, k)
+        for i in goal_prime_location:
+            goal_i = self.env.EnvPlayer.generate_goal_array(i)
+            goal_prime.append(goal_i)
+        return goal_prime      
+        
+    def get_goal_future(self, k, path):        
+        map_point = []
+        goal_prime = []
+        for i in range(34):
+            map_point.append(i)
+        future_point = list(set(map_point) - set(path))
+        goal_prime_location = random.sample(future_point, k)
+        for i in goal_prime_location:
+            goal_i = self.env.EnvPlayer.generate_goal_array(i)
+            goal_prime.append(goal_i)
+        return goal_prime      
+        

@@ -12,18 +12,20 @@ class Env:
         self.act_dimension = self.EnvPlayer.act_dimension
 
     def reset(self):
-        obs = self.EnvPlayer.reset()
+        obs, goal = self.EnvPlayer.reset()
         # self.act_list = self.EnvPlayer.reset_act_list()
-        return obs
+        return obs, goal
 
-    def step(self, episode_step, action, w1, w2, w3, w4):
+    def step(self, episode_step, action, goal, w1, w2, w3, w4):
         obs = self.EnvPlayer.execute(action)
         print('episode_step: %d, current_location: %d'
               % (episode_step, self.EnvPlayer.current_location))
         reward = self.EnvPlayer.get_reward(action, w1, w2, w3, w4)
+        reward_prime = self.EnvPlayer.get_reward_prime(action, goal, w1, w2, w3, w4)
         done = self.EnvPlayer.get_done()
         info = self.EnvPlayer.get_info()
-        return obs, reward, done, info
+        path = self.EnvPlayer.get_path()
+        return obs, reward, reward_prime, done, info, path
 
 
 def make_env(args):
