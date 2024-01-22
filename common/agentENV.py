@@ -48,7 +48,7 @@ class RoutePlanning:
         # obs[1] = self.travel_dis / self.travel_dis_max
         # obs[2] = self.left_dis / self.travel_dis_max
         obs_0 = self.current_location_vector(self.current_location)
-        obs_1 = dis_matrix[self.current_location]
+        obs_1 = dis_matrix[self.current_location]       # change unit to km, normalization 
         obs_2 = self.current_location_vector(self.next_location)
         obs_3 = dis_matrix[self.next_location]
         obs_0 = obs_0[np.newaxis, :]
