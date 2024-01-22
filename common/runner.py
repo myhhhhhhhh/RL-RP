@@ -65,6 +65,8 @@ class Runner:
         epsilon_decent = []
         decent_i = int(0)
         
+        train_flag = False 
+        
         for i in range(int(round(self.args.max_episodes / 3, 0))):
             epsilon_decent.append((1 - (0.01 * i) ** 2) - (1 - (0.01 * (i + 1)) ** 2))
         epsilon = initial_epsilon
@@ -125,8 +127,10 @@ class Runner:
                     # 故调整代码顺序，将保存数据的代码放到done前面，将learn的代码放在done的后面
 
                 # learn
-                if self.memory.current_size >= 200 * self.args.batch_size:
+                if episode >= 1:
+                # if self.memory.current_size >= 20 * self.args.batch_size:
                     # noise_decrease = True
+                    train_flag = True
                     transition = self.memory.uniform_sample()
                     loss_step = self.DQN_agent.train(transition)
                     # save to tensor board

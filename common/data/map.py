@@ -101,6 +101,8 @@ for point, connections in to_id_table.items():
     for i, connection in enumerate(connections):
         # 因为矩阵的索引是从0开始的，所以需要减1
         dis_matrix[point][connection] = distances[i]
+        
+dis_matrix_km = dis_matrix * 0.001  # 用于状态和goal的归一化
 
 
 if __name__ == '__main__':
@@ -110,3 +112,4 @@ if __name__ == '__main__':
     print(map_matrix[18][26])
     scio.savemat('./common/data/map_matrix.mat', mdict={'map_matrix': map_matrix})
     scio.savemat('./common/data/dis_matrix.mat', mdict={'dis_matrix': dis_matrix})
+    print(dis_matrix_km)

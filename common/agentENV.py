@@ -6,6 +6,7 @@ import torch
 
 from common.data.map import map_matrix
 from common.data.map import dis_matrix
+from common.data.map import dis_matrix_km
 from common.data.map import map_point_num
 from common.astar import Astar
 from common.EV_model import EV_model
@@ -48,9 +49,9 @@ class RoutePlanning:
         # obs[1] = self.travel_dis / self.travel_dis_max
         # obs[2] = self.left_dis / self.travel_dis_max
         obs_0 = self.current_location_vector(self.current_location)
-        obs_1 = dis_matrix[self.current_location]       # change unit to km, normalization 
+        obs_1 = dis_matrix_km[self.current_location]       # change unit to km, normalization 
         obs_2 = self.current_location_vector(self.next_location)
-        obs_3 = dis_matrix[self.next_location]
+        obs_3 = dis_matrix_km[self.next_location]
         obs_0 = obs_0[np.newaxis, :]
         obs_1 = obs_1[np.newaxis, :]
         obs_2 = obs_2[np.newaxis, :]
@@ -66,7 +67,7 @@ class RoutePlanning:
         if self.get_action_effect(action) is True:
         # if action != 0:
             self.next_location = action  # 按照训练好的Q网络找出当前状态对应的下一个动作
-            if self.next_location not in self.path:
+            if self.next_location != self.path[-1]:
                 self.path.append(self.next_location)
             # mappoint = self.map[self.current_location]  # current_location仅用于计算状态的更新
             self.travel_dis += dis_matrix[self.current_location][self.next_location] / 1000  # km
@@ -75,9 +76,9 @@ class RoutePlanning:
                               'current_location': self.next_location})
             
             obs_0 = self.current_location_vector(self.current_location)
-            obs_1 = dis_matrix[self.current_location]
+            obs_1 = dis_matrix_km[self.current_location]
             obs_2 = self.current_location_vector(self.next_location)
-            obs_3 = dis_matrix[self.next_location]
+            obs_3 = dis_matrix_km[self.next_location]
             obs_0 = obs_0[np.newaxis, :]
             obs_1 = obs_1[np.newaxis, :]
             obs_2 = obs_2[np.newaxis, :]
@@ -184,7 +185,7 @@ class RoutePlanning:
     # 由位置编号产生一个2*map_point_num的goal数组
     def generate_goal_array(self, goal_location):
         goal_0 = self.current_location_vector(goal_location)
-        goal_1 = dis_matrix[goal_location]
+        goal_1 = dis_matrix_km[goal_location]
         goal_0 = goal_0[np.newaxis, :]
         goal_1 = goal_1[np.newaxis, :]
         goal = np.concatenate((goal_0, goal_1), axis=0)
