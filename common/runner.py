@@ -94,10 +94,10 @@ class Runner:
                     self.memory.store_transition(state, action, reward, state_next, done, goal)
                 state = state_next
                 
-                k = int(20)
-                goal_prime = self.get_goal_full(k)  # k个元素的列表，元素为2*34的np数组
+                k = int(4)     # between [4, 8]
+                # goal_prime = self.get_goal_full(k)  # k个元素的列表，元素为2*34的np数组
                 # goal_prime = self.get_goal_past(k, path)
-                # goal_prime = self.get_goal_future(k, path)
+                goal_prime = self.get_goal_future(k, path)  
                 for i in goal_prime:
                     reward_prime = self.env.EnvPlayer.get_reward_prime(action, goal_prime, self.args.w1, self.args.w2, 
                                                                        self.args.w3, self.args.w4)
@@ -216,7 +216,8 @@ class Runner:
         for i in range(34):
             map_point.append(i)
         future_point = list(set(map_point) - set(path))
-        goal_prime_location = random.sample(future_point, k)
+        kk = min(k, len(future_point))      # prevent sample error 
+        goal_prime_location = random.sample(future_point, kk)
         for i in goal_prime_location:
             goal_i = self.env.EnvPlayer.generate_goal_array(i)
             goal_prime.append(goal_i)

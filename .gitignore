@@ -2,6 +2,6 @@
 
 log*/
 test*/
-test*
+*test*
 *.pyc
 .idea/

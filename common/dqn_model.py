@@ -46,9 +46,11 @@ class DQN_net(nn.Module):
         #         nn.init.kaiming_normal_(m.weight, mode='fan_in')
 
         self.layers_cnn = nn.Sequential(
-            nn.Conv2d(1, 1, (2, 2)),
+            nn.Conv2d(in_channels=1, out_channels=1, kernel_size=(1, 6), stride=(1, 2)),
             nn.ReLU(),
-            nn.MaxPool2d((2, 2)),
+            nn.Conv2d(in_channels=1, out_channels=1, kernel_size=(1, 6), stride=(1, 2)),
+            nn.ReLU(),
+            nn.MaxPool2d((2, 1)),
             nn.Flatten()
         )
         with torch.no_grad():
@@ -57,9 +59,9 @@ class DQN_net(nn.Module):
             print(y.shape)
             in_features = y.shape[1]
         self.layers_linear = nn.Sequential(
-            # nn.Linear(16, a_num),
-            # nn.ReLU()
-            nn.Linear(in_features, a_num),
+            nn.Linear(in_features, 32),
+            nn.ReLU(),
+            nn.Linear(32, a_num),
             nn.ReLU()       # TODO activation function
         )
 
