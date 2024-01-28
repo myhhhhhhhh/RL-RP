@@ -53,16 +53,18 @@ class DQN_net(nn.Module):
             nn.MaxPool2d((2, 1)),
             nn.Flatten()
         )
+        
         with torch.no_grad():
-            x = torch.randn((1, 1, int(s_dim[0] * 1.5), s_dim[1]))
+            x = torch.randn((1, 1, int(s_dim[0] + 1), s_dim[1]))
             y = self.layers_cnn(x)
-            print(y.shape)
+            # print(y.shape)
             in_features = y.shape[1]
+        
         self.layers_linear = nn.Sequential(
-            nn.Linear(in_features, 32),
+            nn.Linear(in_features, a_num),
             nn.ReLU(),
-            nn.Linear(32, a_num),
-            nn.ReLU()       # TODO activation function
+            # nn.Linear(32, a_num),
+            # nn.ReLU()       # TODO activation function
         )
 
     def forward(self, x):

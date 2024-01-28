@@ -59,7 +59,9 @@ class RoutePlanning:
         obs = np.concatenate((obs_0, obs_1, obs_2, obs_3), axis=0)
         # obs = torch.tensor(obs, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
         
-        init_goal = np.random.randint(0,33)  # 设置一个goal的初始状态用于选择动作，后续更新方式更加重要，因此设置为随机        
+        # 设置一个goal的初始状态用于选择动作,可手动设置为途径路上的一个中间点       
+        # init_goal = np.random.randint(0,33)  
+        init_goal = int(21)
         goal = self.generate_goal_array(init_goal)
         return obs, goal
 
@@ -128,7 +130,7 @@ class RoutePlanning:
         goal_location = self.generate_goal_location(goal)
         
         if self.get_action_effect(action) is True:
-            reward -= 1
+            reward += 1
         else:
             # ②到达终点奖励
             if action == goal_location:
@@ -178,18 +180,27 @@ class RoutePlanning:
         return location_vector
     
     # 由2*map_point_num的goal数组提取出代表的位置编号
+    def generate_goal_location_old(self, goal):
+        index = np.argwhere(goal[0] == 1)
+        return (index[0].tolist())[0]
+    # 修改goal为1*34后，所使用的新的取出位置编号的函数
     def generate_goal_location(self, goal):
         index = np.argwhere(goal[0] == 1)
         return (index[0].tolist())[0]
     
-    # 由位置编号产生一个2*map_point_num的goal数组
-    def generate_goal_array(self, goal_location):
+    # 由位置编号产生一个2*map_point_num的goal数组→改为只保留一行，1*map_point_num
+    def generate_goal_array_old(self, goal_location):
         goal_0 = self.current_location_vector(goal_location)
         goal_1 = dis_matrix_km[goal_location]
         goal_0 = goal_0[np.newaxis, :]
         goal_1 = goal_1[np.newaxis, :]
         goal = np.concatenate((goal_0, goal_1), axis=0)
         return goal
+    # 修改goal为1*34后，所使用的新的生成goal矩阵/数组的函数
+    def generate_goal_array(self, goal_location):
+        goal_0 = self.current_location_vector(goal_location)
+        goal_0 = goal_0[np.newaxis, :]   
+        return goal_0
     
     @staticmethod
     def calculate_travel_dis(start_id, end_id):

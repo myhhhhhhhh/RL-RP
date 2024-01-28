@@ -11,9 +11,9 @@ from torchsummary import summary
 from tqdm import tqdm
 # sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
 # print(sys.path)
-from common.memory import MemoryBuffer
+# from common.memory import MemoryBuffer
 from common.dqn_model import DQN_model, Memory
-from common.agentENV import RoutePlanning
+# from common.agentENV import RoutePlanning
 
 
 class Runner:
@@ -24,7 +24,7 @@ class Runner:
         self.memory = Memory(memory_size=args.buffer_size, batch_size=args.batch_size)
         self.DQN_agent = DQN_model(args, s_dim=self.env.obs_dim, a_dim=self.env.act_dimension, a_num=self.env.act_num)     
         print(self.DQN_agent.dqn)
-        summary(model=self.DQN_agent.dqn, input_size=(1, 6, 34), device="cpu") 
+        summary(model=self.DQN_agent.dqn, input_size=(1, 5, 34), device="cpu") 
         # configuration
         self.episode_num = args.max_episodes
         self.episode_step = args.episode_steps
@@ -64,10 +64,12 @@ class Runner:
         # epsilon_decent = (initial_epsilon - finial_epsilon) / 200
         epsilon_decent = []
         decent_i = int(0)
+        decent_i_max = int(100)
         
-        train_flag = False 
+        train_flag = False        
         
-        for i in range(int(round(self.args.max_episodes / 3, 0))):
+        # for i in range(int(round(self.args.max_episodes / 3, 0))):
+        for i in range(decent_i_max):
             epsilon_decent.append((1 - (0.01 * i) ** 2) - (1 - (0.01 * (i + 1)) ** 2))
         epsilon = initial_epsilon
         
@@ -81,6 +83,7 @@ class Runner:
             # data being saved in .mat
             episode_info = {'travel_dis': [], 'current_location': []}
             episode_step = 0
+            repeat_times = int(0)
             while True:
                 with torch.no_grad():  # 节省计算量
                     action, epsilon_using = self.DQN_agent.e_greedy_action(state, goal, epsilon)
@@ -89,22 +92,25 @@ class Runner:
                     state_next, reward, _, done, info, path = self.env.step(episode_step, action, goal, self.args.w1,
                                                                    self.args.w2, self.args.w3, self.args.w4)
                     self.memory.store_transition(state, action, reward, state_next, done, goal)
+                    repeat_times = int(0)
                 else:
                     state_next, reward, _, done, info, path = self.env.step(episode_step, action, goal, self.args.w1,
                                                                    self.args.w2, self.args.w3, self.args.w4)
-                    state_next = state  # 将没进入step的state赋给0矩阵state_next
-                    self.memory.store_transition(state, action, reward, state_next, done, goal)
+                    state_next = state  # 将没进入step的state赋给0矩阵state_next                    
+                    # self.memory.store_transition(state, action, reward, state_next, done, goal)
+                    repeat_times += 1
                 state = state_next
                 
                 k = int(4)     # between [4, 8]
                 # goal_prime = self.get_goal_full(k)  # k个元素的列表，元素为2*34的np数组
                 # goal_prime = self.get_goal_past(k, path)
                 goal_prime = self.get_goal_future(k, path)  
-                for i in goal_prime:
-                    reward_prime = self.env.EnvPlayer.get_reward_prime(action, goal_prime, self.args.w1, self.args.w2, 
-                                                                       self.args.w3, self.args.w4)
-                    self.memory.store_transition(state, action, reward_prime, state_next, done, i)
-                    # print('--------------HER is operated-------------------')
+                if repeat_times == 0:
+                    for i in goal_prime:
+                        reward_prime = self.env.EnvPlayer.get_reward_prime(action, goal_prime, self.args.w1, self.args.w2, 
+                                                                        self.args.w3, self.args.w4)                    
+                        self.memory.store_transition(state, action, reward_prime, state_next, done, i)
+                        # print('--------------HER is operated-------------------')
 
 
                 # save data
@@ -125,10 +131,15 @@ class Runner:
                     break  # 要结束当前循环
                     # 此处若done, 则结束当前while循环，进入下一个episode; 此时应该先保存交互数据。
                     # 故调整代码顺序，将保存数据的代码放到done前面，将learn的代码放在done的后面
+                    
+                # 在同一位置连续原地踏步超过10次，结束回合，防止经验池中的优秀经验被覆盖
+                if repeat_times >= 30 and train_flag is True:
+                    print('失败 in step %d of episode %d' % (episode_step, episode))
+                    break
 
                 # learn
-                if episode >= 1:
-                # if self.memory.current_size >= 20 * self.args.batch_size:
+                # if episode >= 28:
+                if self.memory.current_size >= 20 * self.args.batch_size:
                     # noise_decrease = True
                     train_flag = True
                     transition = self.memory.uniform_sample()
@@ -143,14 +154,13 @@ class Runner:
 
                 episode_step += 1
 
-            if episode <= self.args.max_episodes / 3:
+            if train_flag is False:
                 epsilon = 1.0
-            elif self.args.max_episodes / 3 < episode <= self.args.max_episodes / 3 * 2:
-                epsilon -= float(epsilon_decent[decent_i])
+            elif decent_i < decent_i_max:
+                epsilon -= float(epsilon_decent[decent_i])                              
                 decent_i += 1
-                epsilon = max(epsilon, finial_epsilon)
             else:
-                epsilon = 0.2
+                epsilon = finial_epsilon        
             epsilon_list.append(epsilon)
             
             # show episode data
