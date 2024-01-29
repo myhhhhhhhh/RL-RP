@@ -112,8 +112,8 @@ class Runner:
                         self.memory.store_transition(state, action, reward_prime, state_next, done, i)
                     print('--------------HER is operated-------------------')
                 state = state_next
-
-
+                # push ?
+                
                 # save data
                 for key in episode_info.keys():
                     episode_info[key].append(info[key])
