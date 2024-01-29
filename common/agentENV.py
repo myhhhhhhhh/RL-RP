@@ -1,15 +1,17 @@
-import numpy as np
-from math import exp
-import random
+import numpy as np 
+import random 
 
-import torch
-
-from common.data.map import map_matrix
-from common.data.map import dis_matrix
-from common.data.map import dis_matrix_km
-from common.data.map import map_point_num
+from common.data.map import map_matrix, dis_matrix, dis_matrix_km 
 from common.astar import Astar
 from common.EV_model import EV_model
+
+
+def random_start_end(map_shape=33) -> (int, int):
+    start_id = random.randint(0, map_shape)
+    end_id = random.randint(0, map_shape)
+    while end_id == start_id:
+        end_id = random.randint(0, map_shape)
+    return start_id, end_id
 
 
 class RoutePlanning:
@@ -23,8 +25,8 @@ class RoutePlanning:
         self.map = map_matrix
         self.start_id = self.args.start_id
         self.end_id = self.args.end_id  # todo,去哪填哪
-        self.current_location = self.args.start_id  # 初始化
-        self.next_location = self.args.start_id
+        self.current_location = self.start_id  # 初始化
+        self.next_location = self.start_id
 
         # self.travel_time = 0.0  # 汽车行驶产生的状态变化
         self.travel_dis = 0.0
