@@ -99,7 +99,7 @@ class Runner:
                     state_next = state  # 将没进入step的state赋给0矩阵state_next                    
                     # self.memory.store_transition(state, action, reward, state_next, done, goal)
                     repeat_times += 1
-                state = state_next
+                # state = state_next
                 
                 k = int(4)     # between [4, 8]
                 # goal_prime = self.get_goal_full(k)  # k个元素的列表，元素为2*34的np数组
@@ -110,9 +110,10 @@ class Runner:
                         reward_prime = self.env.EnvPlayer.get_reward_prime(action, goal_prime, self.args.w1, self.args.w2, 
                                                                         self.args.w3, self.args.w4)                    
                         self.memory.store_transition(state, action, reward_prime, state_next, done, i)
-                        # print('--------------HER is operated-------------------')
-
-
+                    print('--------------HER is operated-------------------')
+                state = state_next
+                # push ?
+                
                 # save data
                 for key in episode_info.keys():
                     episode_info[key].append(info[key])
@@ -157,7 +158,8 @@ class Runner:
             if train_flag is False:
                 epsilon = 1.0
             elif decent_i < decent_i_max:
-                epsilon -= float(epsilon_decent[decent_i])                              
+                epsilon -= float(epsilon_decent[decent_i])          
+                epsilon = max(epsilon, finial_epsilon)                    
                 decent_i += 1
             else:
                 epsilon = finial_epsilon        

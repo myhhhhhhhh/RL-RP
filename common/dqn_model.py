@@ -151,10 +151,11 @@ class DQN_model:
         state_goal = torch.tensor(state_goal, dtype=torch.float32).unsqueeze(0)
         Q_value = self.dqn.forward(state_goal)
         if np.random.random() < epsilon:
-            # print('随机')
+            print('随机action')
             action = np.random.randint(0, self.a_num)
             return action, epsilon
         else:
+            print('DQN action')
             action = torch.argmax(Q_value)
             action = action.item()
             return action, epsilon
