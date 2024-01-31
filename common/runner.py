@@ -14,6 +14,7 @@ from tqdm import tqdm
 # from common.memory import MemoryBuffer
 from common.dqn_model import DQN_model, Memory
 # from common.agentENV import RoutePlanning
+from common.data.map import map_matrix
 
 
 class Runner:
@@ -64,13 +65,15 @@ class Runner:
         # epsilon_decent = (initial_epsilon - finial_epsilon) / 200
         epsilon_decent = []
         decent_i = int(0)
-        decent_i_max = int(100)
+        decent_i_max = int(200)
         
         train_flag = False        
         
         # for i in range(int(round(self.args.max_episodes / 3, 0))):
+        # 以decent_i_max为e降低的速度，设置从0到decent_i_max回合间，e从1降低到0
         for i in range(decent_i_max):
-            epsilon_decent.append((1 - (0.01 * i) ** 2) - (1 - (0.01 * (i + 1)) ** 2))
+            # epsilon_decent.append((1 - (0.01 * i) ** 2) - (1 - (0.01 * (i + 1)) ** 2))
+            epsilon_decent.append((1 - (i / decent_i_max) ** 2) - (1 - ((i + 1) / decent_i_max) ** 2))
         epsilon = initial_epsilon
         
         for episode in tqdm(range(self.episode_num)):
@@ -102,17 +105,17 @@ class Runner:
                 # state = state_next
                 
                 k = int(4)     # between [4, 8]
-                # goal_prime = self.get_goal_full(k)  # k个元素的列表，元素为2*34的np数组
+                # goal_prime = self.get_goal_full(k)  # k个元素的列表，元素为1*34的np数组
                 # goal_prime = self.get_goal_past(k, path)
-                goal_prime = self.get_goal_future(k, path)  
+                # goal_prime = self.get_goal_future(k, path) 
+                goal_prime = self.get_goal_from_son(k, state)
                 if repeat_times == 0:
                     for i in goal_prime:
                         reward_prime = self.env.EnvPlayer.get_reward_prime(action, goal_prime, self.args.w1, self.args.w2, 
                                                                         self.args.w3, self.args.w4)                    
                         self.memory.store_transition(state, action, reward_prime, state_next, done, i)
                     print('--------------HER is operated-------------------')
-                state = state_next
-                # push ?
+                state = state_next                
                 
                 # save data
                 for key in episode_info.keys():
@@ -238,4 +241,20 @@ class Runner:
             goal_i = self.env.EnvPlayer.generate_goal_array(i)
             goal_prime.append(goal_i)
         return goal_prime      
-        
+    
+    def get_goal_from_son(self, k, state):
+        cur = ((np.argwhere(state[0] == 1))[0].tolist())[0]
+        goal_prime = []
+        son_point = set()  # 不重复的集合
+        son = np.argwhere(map_matrix[cur] == 1)        
+        for i in son:
+            son_id = i.tolist()[0]
+            son_point.add(son_id)            
+            son_son = np.argwhere(map_matrix[son_id] == 1)
+            for j in son_son:
+                son_point.add(j.tolist()[0])
+        goal_prime_location = random.sample(son_point, k)
+        for i in goal_prime_location:
+            goal_i = self.env.EnvPlayer.generate_goal_array(i)
+            goal_prime.append(goal_i)
+        return goal_prime      

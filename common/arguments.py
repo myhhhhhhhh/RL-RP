@@ -4,7 +4,7 @@ import argparse
 def get_args():
     parser = argparse.ArgumentParser("Soft Actor Critic Implementation")
     # Environment
-    parser.add_argument("--max_episodes", type=int, default=200, help="number of episodes ")
+    parser.add_argument("--max_episodes", type=int, default=100, help="number of episodes ")
     parser.add_argument("--episode_steps", type=int, default=None, help="number of time steps in a sngle episode")
     # Core training parameters
     parser.add_argument("--lr_critic", type=float, default=0.0001, help="learning rate of critic")
