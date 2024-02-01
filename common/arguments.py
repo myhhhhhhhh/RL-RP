@@ -4,17 +4,18 @@ import argparse
 def get_args():
     parser = argparse.ArgumentParser("Soft Actor Critic Implementation")
     # Environment
-    parser.add_argument("--max_episodes", type=int, default=100, help="number of episodes ")
-    parser.add_argument("--episode_steps", type=int, default=None, help="number of time steps in a sngle episode")
+    parser.add_argument("--max_episodes", type=int, default=300, help="number of episodes ")
+    parser.add_argument("--episode_steps", type=int, default=None, help="number of time steps in a single episode")
     # Core training parameters
     parser.add_argument("--lr_critic", type=float, default=0.0001, help="learning rate of critic")
     parser.add_argument("--lr_DQN", type=float, default=5e-3, help="learning rate of alpha")
     parser.add_argument("--base_lrs", type=float, default=5e-5, help="base_lr of CyclicLR")
     parser.add_argument("--gamma", type=float, default=0.9, help="discount factor")
+    parser.add_argument("--target_update_freq", type=int, default=200, help="dqn target_update_freq")
     # for DDPG
-    parser.add_argument("--noise_rate", type=float, default=0.1,
-                        help="initial noise rate for sampling from a standard normal distribution ")
-    parser.add_argument("--noise_discount_rate", type=float, default=0.999)
+    # parser.add_argument("--noise_rate", type=float, default=0.1,
+    #                     help="initial noise rate for sampling from a standard normal distribution ")
+    # parser.add_argument("--noise_discount_rate", type=float, default=0.999)
     # memory buffer
     parser.add_argument("--buffer_size", type=int, default=int(100000),    # DDPG: 1e4 for 200 ep,  3e4 for 500 ep
                         help="number of transitions can be stored in buffer")
