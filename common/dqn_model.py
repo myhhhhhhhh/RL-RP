@@ -36,14 +36,7 @@ class Memory:
 
 class DQN_net(nn.Module):
     def __init__(self, s_dim, a_num):
-        super(DQN_net, self).__init__()
-        # self.fc1 = nn.Linear(s_dim, 64)
-        # self.fc2 = nn.Linear(64, 64)
-        # # self.fc3 = nn.Linear(128, 64)
-        # self.fc4 = nn.Linear(64, a_num)
-        # for m in self.modules():
-        #     if isinstance(m, torch.nn.Linear):
-        #         nn.init.kaiming_normal_(m.weight, mode='fan_in')
+        super(DQN_net, self).__init__() 
 
         self.layers_cnn = nn.Sequential(
             nn.Conv2d(in_channels=1, out_channels=1, kernel_size=(1, 6), stride=(1, 2)),
@@ -65,20 +58,16 @@ class DQN_net(nn.Module):
             nn.ReLU(),
             # nn.Linear(32, a_num),
             # nn.ReLU()       # TODO activation function
-        )
+        ) 
 
-    def forward(self, x):
-        # x = F.relu(self.fc1(x))
-        # x = F.relu(self.fc2(x))
-        # # x = F.relu(self.fc3(x))
-        # x = F.relu(self.fc4(x))
+    def forward(self, x): 
         x = self.layers_cnn(x)
         x = self.layers_linear(x)
         return x
 
 
 class DQN_model:
-    def __init__(self, args, s_dim, a_dim, a_num, target_update_freq=300):
+    def __init__(self, args, s_dim, a_dim, a_num):
         self.args = args
         self.gamma = args.gamma
         self.a_num = a_num
@@ -94,7 +83,8 @@ class DQN_model:
 
         # reset number of update
         self.num_updates = 0
-        self.target_update_freq = target_update_freq
+        self.num_target_updates = 0
+        self.target_update_freq = args.target_update_freq   # default 200
         self.batch_size = args.batch_size
 
     def train(self, minibatch):
@@ -137,6 +127,7 @@ class DQN_model:
         self.num_updates += 1
         if self.num_updates % self.target_update_freq == 0:
             self.dqn_target.load_state_dict(self.dqn.state_dict())
+            self.num_target_updates += 1
             print("total training steps: %d, update target network!" % self.num_updates)
         return loss_np
 

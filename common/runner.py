@@ -140,12 +140,14 @@ class Runner:
                 if repeat_times >= 30 and train_flag is True:
                     print('失败 in step %d of episode %d' % (episode_step, episode))
                     break
-
-                # learn
-                # if episode >= 28:
-                if self.memory.current_size >= 20 * self.args.batch_size:
-                    # noise_decrease = True
-                    train_flag = True
+                
+                episode_step += 1
+                
+            # learn 
+            if self.memory.current_size >= 20 * self.args.batch_size:   # 128 *
+                # noise_decrease = True
+                train_flag = True
+                for _ in range(20):
                     transition = self.memory.uniform_sample()
                     loss_step = self.DQN_agent.train(transition)
                     # save to tensor board
@@ -154,9 +156,7 @@ class Runner:
                     updates += 1
                     # save in .mat
                     loss_one_ep.append(loss_step)
-                    # print('loss step: ', loss_step)
-
-                episode_step += 1
+                    # print('loss step: ', loss_step)                              
 
             if train_flag is False:
                 epsilon = 1.0
@@ -175,7 +175,7 @@ class Runner:
             # 可做如下修改，视具体情况而定
             travel_dis.append(episode_info['travel_dis'][-1])
             # travel_time.append(episode_info['travel_time'][-1])
-            # travel_cost.append(episode_info['travel_cost'][-1])
+            # travel_cost.append(episode_info['travel_cost'][-1])            
             
             # lr scheduler
             lr0 = self.DQN_agent.scheduler_lr.get_lr()[0]
@@ -208,6 +208,8 @@ class Runner:
         print('\nbuffer counter:', self.memory.counter)
         print('buffer current size:', self.memory.current_size)
         print('replay ratio: %.3f' % (self.memory.counter / self.memory.current_size))
+        print('dqn loss update steps: %d' % self.DQN_agent.num_updates)
+        print('dqn target policy update steps: %d' % self.DQN_agent.num_target_updates)
         print('arrive:', self.DONE)
         
     def get_goal_full(self, k):
