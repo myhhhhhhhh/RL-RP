@@ -9,20 +9,17 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 from torchsummary import summary
 from tqdm import tqdm
-# sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
-# print(sys.path)
-# from common.memory import MemoryBuffer
-from common.dqn_model import DQN_model, Memory
-# from common.agentENV import RoutePlanning
+from common.dqn_model import DQN_model
 from common.data.map import map_matrix
+from common.Priority_Replay import Memory_PER
 
 
 class Runner:
     def __init__(self, args, env):
         self.args = args
-        self.env = env
-        # self.buffer = MemoryBuffer(args)
-        self.memory = Memory(memory_size=args.buffer_size, batch_size=args.batch_size)
+        self.env = env        
+        # self.memory = Memory(memory_size=args.buffer_size, batch_size=args.batch_size)
+        self.memory = Memory_PER(args)
         self.DQN_agent = DQN_model(args, s_dim=self.env.obs_dim, a_dim=self.env.act_dimension, a_num=self.env.act_num)     
         print(self.DQN_agent.dqn)
         summary(model=self.DQN_agent.dqn, input_size=(1, 5, 34), device="cpu") 
@@ -144,15 +141,18 @@ class Runner:
                 episode_step += 1
                 
             # learn 
-            if self.memory.current_size >= 20 * self.args.batch_size:   # 128 *
+            if self.memory.current_size >= 10 * self.args.batch_size:   # 128 *
                 # noise_decrease = True
                 train_flag = True
                 for _ in range(20):
-                    transition = self.memory.uniform_sample()
-                    loss_step = self.DQN_agent.train(transition)
+                    # transition = self.memory.uniform_sample()
+                    tree_index, transition, ISWeights = self.memory.sample(self.args.batch_size)  # PER
+                    loss_step, td_error_abs = self.DQN_agent.train(transition, ISWeights)  # PER
+                    self.memory.batch_update(tree_index, td_error_abs)  # PER
                     # save to tensor board
                     self.writer.add_scalar('loss/Q_loss', loss_step, updates)
                     self.writer.add_scalar('reward/step_reward', reward, updates)
+                    # self.writer.add_scalar('loss/ISWeights', ISWeights, updates)
                     updates += 1
                     # save in .mat
                     loss_one_ep.append(loss_step)
@@ -260,3 +260,4 @@ class Runner:
             goal_i = self.env.EnvPlayer.generate_goal_array(i)
             goal_prime.append(goal_i)
         return goal_prime      
+    

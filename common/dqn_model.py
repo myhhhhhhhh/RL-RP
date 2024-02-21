@@ -87,7 +87,7 @@ class DQN_model:
         self.target_update_freq = args.target_update_freq   # default 200
         self.batch_size = args.batch_size
 
-    def train(self, minibatch):
+    def train(self, minibatch, ISWeights):
         # obtain minibatch
         state = []
         action = []
@@ -101,11 +101,7 @@ class DQN_model:
         state = torch.tensor(np.array(state), dtype=torch.float32)
         action = torch.tensor(action, dtype=torch.int64)
         reward = torch.tensor(reward, dtype=torch.float32)
-        state_next = torch.tensor(np.array(state_next), dtype=torch.float32)
-        # state = Variable(torch.FloatTensor(state)).type(dtype=torch.float32)
-        # action = Variable(torch.Tensor(action)).type(dtype=torch.int64)
-        # reward = Variable(torch.FloatTensor(reward)).type(dtype=torch.float32)
-        # state_next = Variable(torch.FloatTensor(state_next)).type(dtype=torch.float32)
+        state_next = torch.tensor(np.array(state_next), dtype=torch.float32)        
         
         print('训练了')
         Q_value = self.dqn.forward(state)  # 64,34
@@ -115,21 +111,33 @@ class DQN_model:
         Q_next = self.dqn_target(state_next).detach()
         Q_next_max, idx = Q_next.max(1)  # greedy policy
         Q_target = reward + self.gamma * Q_next_max
-        Q_target = torch.unsqueeze(Q_target, dim=1)  #
-        loss_fn = nn.MSELoss(reduction='mean')
-
-        loss = loss_fn(Q_value, Q_target)
+        Q_target = torch.unsqueeze(Q_target, dim=1)  #      
+                  
+        # ISWeights是batch size*1数组，不能和mse过后的loss(数)相乘，因此要先两数组相乘再mse得到最终backward的loss
+        ISWeights = torch.tensor(ISWeights, dtype=torch.float32)   # batch size*1
+        td_error = Q_value - Q_target   # batch size*1
+        loss = torch.mul(ISWeights, td_error ** 2).mean()  # 数；**2是对tensor中的元素进行运算
+        
+        # loss_fn = nn.MSELoss(reduction='mean')
+        # loss = loss_fn(Q_value, Q_target)           
+        # weighted_loss = torch.mul(loss, ISWeights) 
+        
         self.dqn_optimizer.zero_grad()
         loss.backward()
         self.dqn_optimizer.step()
 
         loss_np = loss.data.numpy()
+        # td_error_abs = abs(loss_np)
+        td_error_abs = abs(td_error).detach().numpy()
+         # 返回的td_error_abs后续要用作zip运算和循环，应该是一个n*1数组，并且需要从tensor转化为numpy
+         
         self.num_updates += 1
         if self.num_updates % self.target_update_freq == 0:
             self.dqn_target.load_state_dict(self.dqn.state_dict())
             self.num_target_updates += 1
-            print("total training steps: %d, update target network!" % self.num_updates)
-        return loss_np
+            print("total training steps: %d, update target network!" % self.num_updates)         
+       
+        return loss_np, td_error_abs
 
     def e_greedy_action(self, s, g, epsilon):        
         # s = torch.tensor(s, dtype=torch.float32).unsqueeze(0).unsqueeze(0)  # change np.array to Tensor
