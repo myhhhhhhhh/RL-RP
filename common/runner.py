@@ -141,7 +141,7 @@ class Runner:
                 episode_step += 1
                 
             # learn 
-            if self.memory.current_size >= 10 * self.args.batch_size:   # 128 *
+            if self.memory.current_size >= 20 * self.args.batch_size:   # 128 *
                 # noise_decrease = True
                 train_flag = True
                 for _ in range(20):

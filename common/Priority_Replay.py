@@ -22,7 +22,7 @@ class SumTree(object):
         self.tree = np.zeros(2 * capacity - 1)
         # [--------------Parent nodes-------------][-------leaves to recode priority-------]
         #             size: capacity - 1                       size: capacity
-        self.data = np.zeros(capacity, dtype = object)  # for all transitions
+        self.data = np.ones(capacity, dtype=object)  # for all transitions
         # [--------------data frame-------------]
         #             size: capacity
 
@@ -71,7 +71,8 @@ class SumTree(object):
 
         data_idx = leaf_idx - self.capacity + 1
         # tree_index, 权重值, 对应的数据
-        return leaf_idx, self.tree[leaf_idx], self.data[data_idx]
+        data_i = self.data[data_idx] 
+        return leaf_idx, self.tree[leaf_idx], data_i
 
     @property
     def total_p(self):
@@ -126,8 +127,12 @@ class Memory_PER(object):  # stored as ( s, a, r, s_ ) in SumTree
         
         for i in range(n):
             a, b = pri_seg * i, pri_seg * (i + 1)
-            v = np.random.uniform(a, b)
-            idx, p, datai = self.tree.get_leaf(v)        # 权值
+            # v = np.random.uniform(a, b)
+            # idx, p, datai = self.tree.get_leaf(v)        # 权值
+            datai = 1
+            while not isinstance(datai, tuple):   
+                v = np.random.uniform(a, b)
+                idx, p, datai = self.tree.get_leaf(v)    # 权值
             # print(datai)
             # print(type(datai))
             p = max(p, self.epsilon)                    # in case p==0
@@ -135,11 +140,7 @@ class Memory_PER(object):  # stored as ( s, a, r, s_ ) in SumTree
             
             ISWeights[i, 0] = np.power(prob / min_prob, -self.beta) 
             b_idx[i] = idx 
-            b_memory.append(datai) 
-        # x = b_memory[0]
-        # y = b_memory[1]
-        # print(b_memory[0])
-        # print(type(b_memory[0]))
+            b_memory.append(datai)  
         return b_idx, b_memory, ISWeights
 
     def batch_update(self, tree_idx, abs_errors):
