@@ -6,7 +6,7 @@ from common.astar import Astar
 from common.EV_model import EV_model
 
 
-def random_start_end(map_shape=33) -> (int, int):
+def random_start_end(map_shape=33) -> tuple[int, int]:
     start_id = random.randint(0, map_shape)
     end_id = random.randint(0, map_shape)
     while end_id == start_id:

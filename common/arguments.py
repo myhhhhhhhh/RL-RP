@@ -17,7 +17,7 @@ def get_args():
     #                     help="initial noise rate for sampling from a standard normal distribution ")
     # parser.add_argument("--noise_discount_rate", type=float, default=0.999)
     # memory buffer
-    parser.add_argument("--buffer_size", type=int, default=int(100000),    # DDPG: 1e4 for 200 ep,  3e4 for 500 ep
+    parser.add_argument("--buffer_size", type=int, default=int(5000),    # DDPG: 1e4 for 200 ep,  3e4 for 500 ep
                         help="number of transitions can be stored in buffer")
     parser.add_argument("--batch_size", type=int, default=128, help="number of episodes to optimize at the same time")
     # random seeds

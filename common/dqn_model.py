@@ -88,13 +88,22 @@ class DQN_model:
         self.batch_size = args.batch_size
 
     def train(self, minibatch, ISWeights):
-        # obtain minibatch
+        # get minibatch
         state = []
         action = []
         reward = []
         state_next = []        
-        for tt in minibatch:
-            state.append(tt[0][np.newaxis, :])
+        for tt in minibatch: 
+            # if not isinstance(tt, tuple):         
+            #     print('\n')       
+            #     print(tt) 
+            #     print(len(state_next))
+            #     print(type(tt))
+            #     print(type(tt[0]))
+            #     print(tt[0]) 
+            # s = tt[0].tolist()
+            # state.append(s[np.newaxis, :])
+            state.append(tt[0][np.newaxis, :]) 
             action.append(tt[1])
             reward.append(tt[2])
             state_next.append(tt[3][np.newaxis, :])
@@ -103,7 +112,7 @@ class DQN_model:
         reward = torch.tensor(reward, dtype=torch.float32)
         state_next = torch.tensor(np.array(state_next), dtype=torch.float32)        
         
-        print('训练了')
+        # print('训练了')
         Q_value = self.dqn.forward(state)  # 64,34
         action = torch.unsqueeze(action, dim=1)  # 64,1
         Q_value = Q_value.gather(1, action)  # Q(s, a)使Q_value不止与state有关，还与action有关,dim=?
