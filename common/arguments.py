@@ -55,6 +55,7 @@ def get_args():
     # start & end
     parser.add_argument("--start_id", type=int, default=29)
     parser.add_argument("--end_id", type=int, default=27)
+    parser.add_argument("--random_od", type=bool, default=True)
     # all above
     args = parser.parse_args()
     return args
