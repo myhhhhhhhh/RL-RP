@@ -92,14 +92,12 @@ dis_matrix = np.zeros((34, 34), dtype=np.float16)
 
 # 填入连接关系得到0和1组成的Map matrix
 for point, connections in to_id_table.items():
-    for connection in connections:
-        # 因为矩阵的索引是从0开始的，所以需要减1
+    for connection in connections: 
         map_matrix[point][connection] = 1 
 
     # 更新距离矩阵
     distances = dis_table[point]
-    for i, connection in enumerate(connections):
-        # 因为矩阵的索引是从0开始的，所以需要减1
+    for i, connection in enumerate(connections): 
         dis_matrix[point][connection] = distances[i]
         
 dis_matrix_km = dis_matrix * 0.001  # 用于状态和goal的归一化
@@ -107,9 +105,9 @@ dis_matrix_km = dis_matrix * 0.001  # 用于状态和goal的归一化
 
 if __name__ == '__main__':
     print("map_matrix: ", map_matrix)
-    print("dis_matrix: ", dis_matrix)
+    # print("dis_matrix: ", dis_matrix)
     print(map_point_num)
-    print(map_matrix[18][26])
-    scio.savemat('./common/data/map_matrix.mat', mdict={'map_matrix': map_matrix})
-    scio.savemat('./common/data/dis_matrix.mat', mdict={'dis_matrix': dis_matrix})
-    print(dis_matrix_km)
+    # print(map_matrix[18][26])
+    # scio.savemat('./common/data/map_matrix.mat', mdict={'map_matrix': map_matrix})
+    # scio.savemat('./common/data/dis_matrix.mat', mdict={'dis_matrix': dis_matrix})
+    # print(dis_matrix_km)

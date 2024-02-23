@@ -1,7 +1,7 @@
 import numpy as np 
 import random 
 
-from common.data.map import map_matrix, dis_matrix, dis_matrix_km 
+from common.data.map import map_matrix, dis_matrix, dis_matrix_km, to_id_table
 from common.astar import Astar
 from common.EV_model import EV_model
 
@@ -23,10 +23,11 @@ class RoutePlanning:
         self.act_dimension = 1
 
         self.map = map_matrix
-        self.start_id = self.args.start_id
-        self.end_id = self.args.end_id  # todo,去哪填哪
-        self.current_location = self.start_id  # 初始化
-        self.next_location = self.start_id
+        # self.start_id = self.args.start_id
+        # self.end_id = self.args.end_id  # todo,去哪填哪 
+        # self.current_location = self.start_id  # 初始化
+        # self.next_location = self.start_id
+        self.set_OD()
 
         # self.travel_time = 0.0  # 汽车行驶产生的状态变化
         self.travel_dis = 0.0
@@ -37,10 +38,24 @@ class RoutePlanning:
         self.info = {}
         self.path = [self.start_id]  # 记录已经到达的点
 
+    def set_OD(self):
+        if self.args.random_od:
+            self.start_id = random.randint(0, 33)
+            self.end_id = random.randint(0, 33)
+            while self.end_id == self.start_id:
+                self.end_id = random.randint(0, 33)
+        else: 
+            self.start_id = self.args.start_id
+            self.end_id = self.args.end_id  # todo,去哪填哪
+        self.current_location = self.start_id  # 初始化
+        self.next_location = self.start_id
+        print('[start_id: %d, end_id: %d]' % (self.start_id, self.end_id))
+
     def reset(self):
+        self.set_OD()
         self.done = False
-        self.current_location = self.args.start_id
-        self.next_location = self.args.start_id
+        # self.current_location = self.args.start_id
+        # self.next_location = self.args.start_id
         self.travel_dis = 0.0  # 汽车行驶产生的状态变化
         self.path = [self.start_id]
 
@@ -63,7 +78,8 @@ class RoutePlanning:
         
         # 设置一个goal的初始状态用于选择动作,可手动设置为途径路上的一个中间点       
         # init_goal = np.random.randint(0,33)  
-        init_goal = int(21)
+        # init_goal = int(21)
+        init_goal = to_id_table[self.start_id][0]
         goal = self.generate_goal_array(init_goal)
         return obs, goal
 

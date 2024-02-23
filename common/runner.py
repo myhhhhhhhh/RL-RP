@@ -128,13 +128,13 @@ class Runner:
 
                 if done:  # 把到达终点的情况保存下来
                     print('到了 in step %d of episode %d' % (episode_step, episode))
-                    self.DONE.update({episode: episode_step})
+                    self.DONE.update({episode: episode_step+1})
                     break  # 要结束当前循环
                     # 此处若done, 则结束当前while循环，进入下一个episode; 此时应该先保存交互数据。
                     # 故调整代码顺序，将保存数据的代码放到done前面，将learn的代码放在done的后面
                     
                 # 在同一位置连续原地踏步超过10次，结束回合，防止经验池中的优秀经验被覆盖
-                if repeat_times >= 20 and train_flag is True:
+                if repeat_times >= 30 and train_flag is True:
                     print('失败 in step %d of episode %d' % (episode_step, episode))
                     break
                 
@@ -199,9 +199,7 @@ class Runner:
         scio.savemat(self.save_path + '/ep_reward.mat', mdict={'ep_reward': average_reward})
         scio.savemat(self.save_path + '/Q_loss.mat', mdict={'Q_loss': loss})
         scio.savemat(self.save_path + '/lr_recorder.mat', mdict=lr_recorder)
-        scio.savemat(self.save_path + '/travel_dis.mat', mdict={'travel_dis': travel_dis})
-        # scio.savemat(self.save_path + '/travel_time.mat', mdict={'travel_time': travel_time})
-        # scio.savemat(self.save_path + '/travel_cost.mat', mdict={'travel_cost': travel_cost})
+        scio.savemat(self.save_path + '/travel_dis.mat', mdict={'travel_dis': travel_dis}) 
         scio.savemat(self.save_path + '/epsilon.mat', mdict={'epsilon': epsilon_list})
 
     def memory_info(self):

@@ -93,16 +93,7 @@ class DQN_model:
         action = []
         reward = []
         state_next = []        
-        for tt in minibatch: 
-            # if not isinstance(tt, tuple):         
-            #     print('\n')       
-            #     print(tt) 
-            #     print(len(state_next))
-            #     print(type(tt))
-            #     print(type(tt[0]))
-            #     print(tt[0]) 
-            # s = tt[0].tolist()
-            # state.append(s[np.newaxis, :])
+        for tt in minibatch:  
             state.append(tt[0][np.newaxis, :]) 
             action.append(tt[1])
             reward.append(tt[2])
@@ -159,11 +150,11 @@ class DQN_model:
         state_goal = torch.tensor(state_goal, dtype=torch.float32).unsqueeze(0)
         Q_value = self.dqn.forward(state_goal)
         if np.random.random() < epsilon:
-            print('随机action')
+            # print('随机action')
             action = np.random.randint(0, self.a_num)
             return action, epsilon
         else:
-            print('DQN action')
+            # print('DQN action')
             action = torch.argmax(Q_value)
             action = action.item()
             return action, epsilon

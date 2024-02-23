@@ -131,7 +131,7 @@ class Memory_PER(object):  # stored as ( s, a, r, s_ ) in SumTree
             # idx, p, datai = self.tree.get_leaf(v)        # 权值
             datai = 1
             # 判断若datai不是被填充过后的元组，则重新采样，直到采到有效数据为止
-            while not isinstance(datai, tuple):   
+            while not isinstance(datai, tuple):    
                 v = np.random.uniform(a, b)
                 idx, p, datai = self.tree.get_leaf(v)    # 权值
             # print(datai)
