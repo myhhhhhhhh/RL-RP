@@ -107,19 +107,20 @@ class RoutePlanning:
         # 第四部分：路径规划相关奖惩
         # ①防止选择不可行动作
         if self.get_action_effect(action) is True:
-            reward -= 1
+            reward += 5
         else:
-            # ②到达终点奖励
-            if self.done is True:
-                reward += 50
-                reward += 10 * (1 / self.travel_dis)
-            # ③步数尽量少
-            else:
-                reward -= 0.1
+            reward -= 1
+        # ②到达终点奖励
+        if self.done is True:
+            reward += 30
+            reward += 50 * (1 / self.travel_dis)
+        # ③步数尽量少
+        else:
+            reward -= 1
         
         # ④防止走回头路
         if self.current_location in self.path:
-            reward -= 0.1        
+            reward -= 1        
         
         # ⑤通过A*,离终点越近给越大的奖励
         dis_left = self.calculate_travel_dis(self.current_location, self.end_id) / self.calculate_travel_dis(
@@ -132,22 +133,24 @@ class RoutePlanning:
         goal_location = self.generate_goal_location(goal)
         
         if self.get_action_effect(action) is True:
-            reward += 1
+            reward += 5
         else:
-            # ②到达终点奖励
-            if action == goal_location:
-                reward += 50
-                if self.travel_dis != 0:
-                    reward += 10 * (1 / self.travel_dis)
-                else:
-                    reward += 10 * (1 / (self.travel_dis + 1))
-            # ③减少步数
+            reward -= 1 
+        
+        # ②到达终点奖励
+        if action == goal_location:
+            reward += 30
+            if self.travel_dis != 0:
+                reward += 50 * (1 / self.travel_dis)
             else:
-                reward -= 0.1
+                reward += 50 * (1 / (self.travel_dis + 1))
+        # ③减少步数
+        else:
+            reward -= 1
         
         # ④防止走回头路
         if self.current_location in self.path:
-            reward -= 0.1        
+            reward -= 1        
         
         # ⑤通过A*,离终点越近给越大的奖励
         if self.current_location != goal_location:

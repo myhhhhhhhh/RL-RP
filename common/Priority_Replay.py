@@ -22,7 +22,7 @@ class SumTree(object):
         self.tree = np.zeros(2 * capacity - 1)
         # [--------------Parent nodes-------------][-------leaves to recode priority-------]
         #             size: capacity - 1                       size: capacity
-        self.data = np.ones(capacity, dtype=object)  # for all transitions
+        self.data = np.zeros(capacity, dtype=object)  # for all transitions
         # [--------------data frame-------------]
         #             size: capacity
 
@@ -130,6 +130,7 @@ class Memory_PER(object):  # stored as ( s, a, r, s_ ) in SumTree
             # v = np.random.uniform(a, b)
             # idx, p, datai = self.tree.get_leaf(v)        # 权值
             datai = 1
+            # 判断若datai不是被填充过后的元组，则重新采样，直到采到有效数据为止
             while not isinstance(datai, tuple):   
                 v = np.random.uniform(a, b)
                 idx, p, datai = self.tree.get_leaf(v)    # 权值

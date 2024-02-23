@@ -62,7 +62,7 @@ class Runner:
         # epsilon_decent = (initial_epsilon - finial_epsilon) / 200
         epsilon_decent = []
         decent_i = int(0)
-        decent_i_max = int(200)
+        decent_i_max = int(490)
         
         train_flag = False        
         
@@ -97,7 +97,7 @@ class Runner:
                     state_next, reward, _, done, info, path = self.env.step(episode_step, action, goal, self.args.w1,
                                                                    self.args.w2, self.args.w3, self.args.w4)
                     state_next = state  # 将没进入step的state赋给0矩阵state_next                    
-                    # self.memory.store_transition(state, action, reward, state_next, done, goal)
+                    self.memory.store_transition(state, action, reward, state_next, done, goal)
                     repeat_times += 1
                 # state = state_next
                 
@@ -134,14 +134,14 @@ class Runner:
                     # 故调整代码顺序，将保存数据的代码放到done前面，将learn的代码放在done的后面
                     
                 # 在同一位置连续原地踏步超过10次，结束回合，防止经验池中的优秀经验被覆盖
-                if repeat_times >= 30 and train_flag is True:
+                if repeat_times >= 20 and train_flag is True:
                     print('失败 in step %d of episode %d' % (episode_step, episode))
                     break
                 
                 episode_step += 1
                 
             # learn 
-            if self.memory.current_size >= 20 * self.args.batch_size:   # 128 *
+            if self.memory.current_size >= 40 * self.args.batch_size:   # 128 *
                 # noise_decrease = True
                 train_flag = True
                 for _ in range(20):
